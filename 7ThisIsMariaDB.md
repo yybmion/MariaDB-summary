@@ -207,7 +207,7 @@ SELECT CEILING(4.7), FLOOR(4.7), ROUND(4.7);
 SELECT CONV('AA',16,2), CONV(100,10,8); 
 -- 16진수 AA를 2진수로 변경, 10진수의 100을 8진수로 변경
 ```
-(여기에 결과)
+![20221228_215001](https://user-images.githubusercontent.com/113106136/209816353-60c7cbb2-53ea-492b-b79c-da471ee39f9e.png)
 
 - MOD(숫자1, 숫자2), 숫자1 % 숫자2 : 숫자1을 숫자2로 나눈 나머지 반환
 - POW(숫자1, 숫자2) : 숫자1을 숫자2만큼 거듭제곱한 값 반환
@@ -218,7 +218,8 @@ select mod(228, 10), 228%10, 228 mod 10;
 
 select pow(3, 3), sqrt(25);
 ```
-(여기에 결과)
+
+![20221228_220210](https://user-images.githubusercontent.com/113106136/209816403-79f64369-2a6a-4014-87b1-71c7548e34e7.png)
 
 - RAND() : 0이상 1미만의 실수 랜덤값 출력
 - SIGN(숫자) : 숫자가 양수, 0, 음수인지 구해 1, 0, -1 중 하나 반환
@@ -231,7 +232,8 @@ select sign(123),sign(0),sign(-123);
 
 select truncate(2222.2272,2), truncate(2222.2272,-2);
 ```
-(여기에 결과)
+![98](https://user-images.githubusercontent.com/113106136/209816441-73debb93-68e8-411f-b7ed-8c92d9acfa06.png)
+
 
 #### 날짜/시간 함수
 
@@ -255,7 +257,8 @@ select addtime('10:10:10', '1:1:1');
 select subtime('10:10:10', '1:1:1');
 -- 시간 빼기
 ```
-(여기에 결과)
+![20221228_220304](https://user-images.githubusercontent.com/113106136/209816478-30bfe38f-eaba-4a92-806e-9aacba7a1422.png)
+
 
 - CURDATE(), CURTIME(), NOW(), SYSDATE()
 - CURDATE(), CURTIME(): 현재 연-월-일 반환, 현재 시:분:초 반환
@@ -281,6 +284,8 @@ select timediff('10:10:10', curtime());
 select timediff(curtime(), '10:10:10');
 -- 시간 차이 리턴
 ```
+![796](https://user-images.githubusercontent.com/113106136/209816536-04f70cf8-197b-468b-a2f0-1da13f7c91cb.png)
+
 
 - DAYOFWEEK(날짜), MONTHNAME(), DAYOFYEAR(날짜)
 - DAYOFWEEK(): 요일(1~7: 일요일부터 토요일) 반환
@@ -318,6 +323,7 @@ select concat(quarter(curdate()), '사분기') as '분기';
 select time_to_sec('12:12:12');
 -- 시간을 초로 환산
 ```
+![fhf](https://user-images.githubusercontent.com/113106136/209816597-599de267-0582-4c07-90e9-1254307fd71b.png)
 
 #### 시스템/정보 함수
 
@@ -351,6 +357,7 @@ select version();
 ```
 
 
+![dfhhd](https://user-images.githubusercontent.com/113106136/209816654-b989163d-5cb0-4405-b162-0601630a281f.png)
 
 
 
