@@ -50,3 +50,48 @@ INSERT INTO buyTBL VALUES(NULL, 'bbb', N'노트북', N'전자', 1000, 1);	-- 정
 INSERT INTO buyTBL VALUES(NULL, 'ddd', N'모니터', N'전자', 200,  1);	-- 오류발생(userTBL 기본키에 없는 값)
 ```
 
+
+#### 제약 조건
+---
+> 제약 조건이란 데이터의 **무결성**을 지키기 위한 제한된 조건을 의미한다. 즉, 특정 데이터를 입력할 때 무조건적으로 입력되는 것이 아닌, 어떠한 조건을 만족했을 때 입력되도록 제약할 수 있다.
+
+1. PRIMARY KEY
+2. FOREIGN KEY
+3. UNIQUE
+4. CHECK
+5. DEFAULT 정의
+6. NULL 값 허용
+**6가지** 제약 조건 제공
+
+
+**기본 키 제약 조건**
+> 테이블에 존재하는 많은 행의 데이터를 구분할 수 있는 식별자를 **'기본 키'**라고 부른다.
+
+- 기본 키에 입력되는 값은 중복될 수 없으며, NULL 값이 입력될 수 없다.
+
+```sql
+USE tableDB;
+DROP TABLE IF EXSISTS buyTBL, userTBL;
+CREATE TABLE userTBL
+( userID CHAR(8) NOT NULL PRIMARY KEY,
+  name VARCHAR(10) NOT NULL,
+  birthYear INT NOT NULL
+);
+```
+
+테이블 정보 보기
+```sql
+DESCRIBE userTBL;
+```
+
+**PRIMARY KEY** 이름 지정해주기
+```sql
+DROP TABLE IF EXSISTS userTBL;
+CREATE TABLE userTBL
+( userID CHAR(8) NOT NULL,
+  name VARCHAR(10) NOT NULL,
+  birthYear INT NOT NULL,
+  CONSTRAINT PRIMARY KEY PK_userTBL_userID (userID) -- 이름 지정
+);
+
+
