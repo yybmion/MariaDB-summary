@@ -87,10 +87,78 @@ CREATE TABLE TBL4
 
 다음과 같이 새로운 페이지가 많이 할당되어 작업이 느려질 수 있다.
 
+### 클러스트형 인덱스와 보조 인덱스의 구조
 
+1. 클러스트형 인덱스
+   
+(앞에 테이블 생성하고 삽입까지 마쳤다고 가정)
+```sql
+ALTER TABLE clusterTBL
+    ADD CONSTRAINT PK_clusterTBL_userID
+        PRIMARY KEY(userID);
+```
+하면 userID가 오름차순 정렬이 될 것이다.
 
+**B-TREE 형태의 인덱스가 형성된다!**
+![DESCRIPTION](https://s3.us-west-2.amazonaws.com/secure.notion-static.com/93080d6a-0f7b-4873-986b-a51e00d2d307/%EC%8A%A4%ED%81%AC%EB%A6%B0%EC%83%B7_2022-12-29_%EC%98%A4%EC%A0%84_7.36.16.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=AKIAT73L2G45EIPT3X45%2F20230103%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20230103T122525Z&X-Amz-Expires=86400&X-Amz-Signature=573baba93228319d11dd7c70ff9eeb71643a8ec5c2422478a20e0a7041477522&X-Amz-SignedHeaders=host&response-content-disposition=filename%3D%22%25EC%258A%25A4%25ED%2581%25AC%25EB%25A6%25B0%25EC%2583%25B7%25202022-12-29%2520%25EC%2598%25A4%25EC%25A0%2584%25207.36.16.png%22&x-id=GetObject)
 
+2. 보조 인덱스
 
+UNIQUE제약 조건은 보조 인덱스를 생성한다.
+```sql
+ALTER TABLE secondaryTBL
+    ADD CONSTRAINT UK_secondaryTBL_userID
+        UNIQUE (userID);
+```
+
+먼저 데이터를 확인해보면 순서는 삽입 순서와 같다.
+
+보조 인덱스 구성 후
+![description](https://s3.us-west-2.amazonaws.com/secure.notion-static.com/d6e398ca-b92b-4407-8ac3-76fee0d3d3c3/%EC%8A%A4%ED%81%AC%EB%A6%B0%EC%83%B7_2022-12-29_%EC%98%A4%EC%A0%84_7.36.33.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=AKIAT73L2G45EIPT3X45%2F20230103%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20230103T123208Z&X-Amz-Expires=86400&X-Amz-Signature=af94c702d434c0ed5c427367a5274d4cabb83c7c03ff65455bc4e28ad0e397ce&X-Amz-SignedHeaders=host&response-content-disposition=filename%3D%22%25EC%258A%25A4%25ED%2581%25AC%25EB%25A6%25B0%25EC%2583%25B7%25202022-12-29%2520%25EC%2598%25A4%25EC%25A0%2584%25207.36.33.png%22&x-id=GetObject)
+
+우선 인덱스 페이지의 리프 페이지에 인덱스로 구성된 열(userID)을 정렬한다.그리고 데이터 위치 포인터를 생성한다. 데이터의 위치 포인트는 크러스트형 인덱스와 달리 주소 값이 기록되어 바로 데이터의 위치를 가리키게 된다.
+
+> SELECT 문으로 JKW(조관우)를 검색시 클러스트형이 더 빠르다는 것은 그림만 봐도 알 수 있다.
+
+**하지만!!**
+**데이터 삽입시**에는 **클러스트형 인덱스**는 **페이지 분할**이 일어나지만 보조 인덱스는 **페이지 분할**이 안일어나 성능에 주는 부하가 더 적었다.
+
+- 보조 인덱스 데이터 삽입
+![DESCRIPTION](https://s3.us-west-2.amazonaws.com/secure.notion-static.com/732e4ed6-6951-46cc-987b-9f4e8cfd96bf/%EC%8A%A4%ED%81%AC%EB%A6%B0%EC%83%B7_2022-12-29_%EC%98%A4%EC%A0%84_8.05.22.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=AKIAT73L2G45EIPT3X45%2F20230103%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20230103T124251Z&X-Amz-Expires=86400&X-Amz-Signature=a9ca4ed567a6176336acf8ca4046f6a46555d6be875755790323e01b01036b2a&X-Amz-SignedHeaders=host&response-content-disposition=filename%3D%22%25EC%258A%25A4%25ED%2581%25AC%25EB%25A6%25B0%25EC%2583%25B7%25202022-12-29%2520%25EC%2598%25A4%25EC%25A0%2584%25208.05.22.png%22&x-id=GetObject)
+
+보조 인덱스는 데이터 페이지를 정렬하는 것이 아니므로 그냥 데이터 페이지의 뒤쪽 빈 부분에 삽입된다.
+
+그리고 인덱스의 리프 페이지에도 약간의 위치가 조정된 것일뿐 페이지 분할은 일어나지 않았다.
+
+- 클러스트형 인덱스 데이터 삽입
+![description](https://s3.us-west-2.amazonaws.com/secure.notion-static.com/d5afb65e-e042-446a-9638-90c2c9e08974/Untitled.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=AKIAT73L2G45EIPT3X45%2F20230103%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20230103T124457Z&X-Amz-Expires=86400&X-Amz-Signature=21bfbb9d226f06897403ba86f66245348835fe50a128f280a69ce6ca863a553e&X-Amz-SignedHeaders=host&response-content-disposition=filename%3D%22Untitled.png%22&x-id=GetObject)
+___
+### 클러스트형 인덱스와 보조 인덱스가 혼합되어 있을 경우
+
+먼저 클러스트형 인덱스를 생성
+![description](https://s3.us-west-2.amazonaws.com/secure.notion-static.com/52489854-e10a-4ab9-a839-ca3c60c96434/%EC%8A%A4%ED%81%AC%EB%A6%B0%EC%83%B7_2022-12-29_%EC%98%A4%EC%A0%84_8.13.05.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=AKIAT73L2G45EIPT3X45%2F20230103%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20230103T133816Z&X-Amz-Expires=86400&X-Amz-Signature=fa0edc09235b4e1495577c2fe1783a09466d9fc970a0373efff8d46d94d014e1&X-Amz-SignedHeaders=host&response-content-disposition=filename%3D%22%25EC%258A%25A4%25ED%2581%25AC%25EB%25A6%25B0%25EC%2583%25B7%25202022-12-29%2520%25EC%2598%25A4%25EC%25A0%2584%25208.13.05.png%22&x-id=GetObject)
+
+이후 UNIQUE제약 조건으로 보조 인덱스 추가
+
+![DESCRIPTION](https://s3.us-west-2.amazonaws.com/secure.notion-static.com/6005e21f-b6f1-451e-853f-5755ca86b513/%EC%8A%A4%ED%81%AC%EB%A6%B0%EC%83%B7_2022-12-29_%EC%98%A4%EC%A0%84_8.13.58.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=AKIAT73L2G45EIPT3X45%2F20230103%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20230103T134016Z&X-Amz-Expires=86400&X-Amz-Signature=e7411eceef1192342c098b0947ca80b4219ebae73308d99f918dd0a7e0bd9ac9&X-Amz-SignedHeaders=host&response-content-disposition=filename%3D%22%25EC%258A%25A4%25ED%2581%25AC%25EB%25A6%25B0%25EC%2583%25B7%25202022-12-29%2520%25EC%2598%25A4%25EC%25A0%2584%25208.13.58.png%22&x-id=GetObject)
+
+추가! 보조인덱스는 리프페이지에는 정렬된 상태고 데이터페이지에는 정렬이 안된 상태이다.
+
+그래서 이 둘을 추가했을 때를 보자면 클러스트형 인덱스의 경우에는 그대로 변함이 없다. 우선 보조 인덱스의 루트 페이지와 리프 페이지의 키 값(NAME)이 이름으로 구성되었으므로 일단 이름으로 정렬되었다. 특히, 관심이 가는 것은 보조 인덱스의 리프 페이지다. 클러스터형 인덱스 페이지가 없었다면 아마도 '**데이터 페이지의 주소 값**'으로 구성되어 있었겠지만, 지금은 **클러스터형 인덱스의 키 값**(여기서는 userID)을 가지게 된다. 
+
+만약
+```sql
+SELECT addr FROM mixedTBL WHERE name='임재범';
+```
+
+쿼리를 실행한다면 다음 순서로 검색을 하게 될것이다.
+
+1. (페이지 번호 10번 읽음) 보조 인덱스의 루트 페이지에서 '은지원'보다 큰 값이므로 200번 페이지에 있다는 것 확인
+2. (페이지 번호 200번 읽음) '임재범'은 클러스터형 인덱스의 키 값 LJB임을 확인한 후 , 무조건 클러스터 인덱스의 루트 페이지로 가서 찾음
+3. (페이지 번호 20번 읽음) 'LJB'는 'KBS'보다 크고 'ssk'보다 작으므로 1001번 페이지에 있는 것 확인
+4. (페이지 번호 1001번 읽음) 'LJB'값을 찾고 그 주소인 '서울'을 찾아냄
+
+>결론적으로 보조인덱스의 리프 페이지에 기존처럼 '**데이터페이지+#오프셋**'으로 구성하면 치명적인 단점 때문에 사용하지 않는다.
 
 
 
