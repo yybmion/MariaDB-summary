@@ -352,6 +352,7 @@ type은 'range'고
 
 결과는 
 
+![20230105_211708](https://user-images.githubusercontent.com/113106136/210778482-fcbec2c3-a52a-4663-ab27-c633ed50332c.png)
 
 
 
