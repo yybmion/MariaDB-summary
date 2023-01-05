@@ -160,6 +160,197 @@ SELECT addr FROM mixedTBL WHERE name='임재범';
 
 >결론적으로 보조인덱스의 리프 페이지에 기존처럼 '**데이터페이지+#오프셋**'으로 구성하면 치명적인 단점 때문에 사용하지 않는다.
 
+___
+
+### 인덱스 생성/변경/삭제
+
+인덱스 생성
+```sql
+-- 따로 인덱스 생성
+
+CREATE INDEX 인덱스명 ON 테이블명 (컬럼명); -- 보조 인덱스 생성 (중복 허용)
+
+CREATE UNIQUE INDEX 인덱스명 ON 테이블명 (컬럼명); -- 보조 인덱스 생성 (중복 비허용)
+
+CREATE FULLTEXT INDEX 인덱스명 ON 테이블명 (컬럼명); -- 클러스터 인덱스 생성
+
+CREATE UNIQUE INDEX 인덱스명 ON 테이블명 (컬럼명1, 컬러명2); -- 다중 컬럼 인덱스 생성
+
+ANALYZE TABLE 테이블명; -- !! 생성한 인덱스 적용 !!
+```
+
+**ALTER INDEX**로 인덱스 추가
+
+
+```sql
+ALTER TABLE 테이블이름
+ADD INDEX 인덱스이름 (필드이름)
+-- 중복을 허용하는 인덱스.
+-- 보조 인덱스.
+-- 가장 느리지만 인덱스 안한 컬럼 조회하는 것보다 인덱스 붙인 컬럼 조회하는게 더 빠르다. 여러개 노멀키 를 지정할수 있다.
+
+
+ALTER TABLE 테이블이름
+ADD UNIQUE INDEX 인덱스이름 (필드이름)
+-- 중복을 허용하지 않는 유일한 키. null 허용. 
+-- 보조 인덱스.
+-- 고속으로 조회 가능
+
+
+ALTER TABLE 테이블이름
+ADD PRIMARY KEY INDEX 인덱스이름 (필드이름)
+-- 중복되지 않은 유일한 키. null 비허용. 
+-- 클러스터 인덱스
+-- where로 데이터를 조회할때 가장 고속으로 조회
+
+
+ALTER TABLE 테이블이름
+ADD FULLTEXT INDEX 인덱스이름 (필드이름)
+-- 풀텍스트 인덱스
+-- 긴 문자열 데이터를 인덱스로 검색할 때 사용.
+```
+
+**인덱스 삭제**
+
+```sql
+DROP INDEX 인덱스이름 ON 테이블이름
+-- DROP 문은 내부적으로 ALTER 문으로 자동 변환되어 명시된 이름의 인덱스를 삭제
+
+ALTER TABLE 테이블이름
+DROP INDEX 인덱스이름
+```
+
+Primary key로 지정으로 자동 생성된 클러스터형 인덱스는 **DROP INDEX문**으로 삭제되지 않고, **ALTER INDEX문**으로만 삭제될 수 있다.
+
+실습을 통해 생성과 삭제를 알아보자 MariaDB **p.385**
+```sql
+ALTER TABLE userTBL DROP PRIMARY KEY;
+```
+
+만약 오류가 난다면 참조하고 있는 열이 존재할 가능성이 있다.
+그래서 외래 키를 먼저 제거하고 기본키를 제거하면 된다.
+
+```sql
+ALTER TABLE buyTBL DROP FOREIGN KEY buyTBL_ibfk_1;
+ALTER TABLE userTBL DROP PRIMARY KEY;
+```
+
+### 인덱스의 성능 비교
+
+> 인덱스를 생성하고 삭제하는 방법에 대해서 익혔으니 어떤 인덱스가 어떠한 상황에서 더 성능이 좋은지 알아보자
+
+1. 실습할 데이터 베이스 만들기
+
+```sql
+CREATE DATABASE IF NOT EXISTS indexDB
+```
+2. EMP(인데스 없는 테이블), EMP_C(클러스터형 인덱스를 생성할 테이블), EMP_Se(보조 인덱스를 생성할 테이블)
+
+```sql
+create table emp select * from employees.employees order by rand();
+create table emp_c select * from employees.employees order by rand();
+create table emp_se select * from employees.employees order by rand();
+ // order by rand(); - employees의 30만건 데이터가 랜덤으로 섞임
+
+select * from emp limit 5;
+select * from emp_c limit 5;//클러스터형 인덱스 emp
+select * from emp_se limit 5;//보조 인덱스 emp
+// 5건의 데이터씩만 확인
+```
+
+![description](https://s3.us-west-2.amazonaws.com/secure.notion-static.com/afc0fbc5-6c0d-4ab3-a381-d40024fc97ee/%EC%8A%A4%ED%81%AC%EB%A6%B0%EC%83%B7_2022-12-29_%EC%98%A4%EC%A0%84_9.01.22.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=AKIAT73L2G45EIPT3X45%2F20230105%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20230105T111945Z&X-Amz-Expires=86400&X-Amz-Signature=4bc0a36fce25709bccbb67996a7aec2a90d52208bd369ae8c4f186a867aef91a&X-Amz-SignedHeaders=host&response-content-disposition=filename%3D%22%25EC%258A%25A4%25ED%2581%25AC%25EB%25A6%25B0%25EC%2583%25B7%25202022-12-29%2520%25EC%2598%25A4%25EC%25A0%2584%25209.01.22.png%22&x-id=GetObject)
+
+테이블의 정보를 봐보자
+
+```sql
+show table status;
+Data_length : 데이터 크기
+Index_length : 인덱스 크기
+```
+![description](https://s3.us-west-2.amazonaws.com/secure.notion-static.com/b1c0018b-ee44-41ea-914a-30eeb67d70a2/%EC%8A%A4%ED%81%AC%EB%A6%B0%EC%83%B7_2022-12-29_%EC%98%A4%EC%A0%84_9.01.58.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=AKIAT73L2G45EIPT3X45%2F20230105%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20230105T112216Z&X-Amz-Expires=86400&X-Amz-Signature=53015c885f1ff0c973190fe1b442f18c7f36d1da5fc21705f6e30cbe060b607e&X-Amz-SignedHeaders=host&response-content-disposition=filename%3D%22%25EC%258A%25A4%25ED%2581%25AC%25EB%25A6%25B0%25EC%2583%25B7%25202022-12-29%2520%25EC%2598%25A4%25EC%25A0%2584%25209.01.58.png%22&x-id=GetObject)
+
+3. 이후에 Emp_C에는 클러스터형 인덱스(=Primary Key 인덱스)를, Emp_Se에는 보조 인덱스를 생성해보자
+
+```sql
+alter table emp_c add primary key(emp_no);//클러스터 인덱스 생성
+alter table emp_se add index idx_emp_no(emp_no);//보조인덱스 생성
+select * from emp limit 5;
+select * from emp_c limit 5;//클러스터형 인덱스 emp
+select * from emp_se limit 5;//보조 인덱스 emp
+```
+
+![description](https://s3.us-west-2.amazonaws.com/secure.notion-static.com/50f509ab-5914-4966-be4c-be5f19c404bb/%EC%8A%A4%ED%81%AC%EB%A6%B0%EC%83%B7_2022-12-29_%EC%98%A4%EC%A0%84_9.02.36.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=AKIAT73L2G45EIPT3X45%2F20230105%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20230105T112435Z&X-Amz-Expires=86400&X-Amz-Signature=f1d2ecdd3be300461d4bc3b1db173be35827b77b463863ee67f5dc264ce49f8b&X-Amz-SignedHeaders=host&response-content-disposition=filename%3D%22%25EC%258A%25A4%25ED%2581%25AC%25EB%25A6%25B0%25EC%2583%25B7%25202022-12-29%2520%25EC%2598%25A4%25EC%25A0%2584%25209.02.36.png%22&x-id=GetObject)
+
+**클러스트형 인덱스**가 생성된 두 번째 테이블(Emp_C)만 정렬되어있다. 그 이유는 클러스터형 인덱스만 **데이터 페이지**를 정렬하기 때문이다.
+
+**보조인덱스**는 **인덱스 페이지**에서는 정렬이 되지만 **데이터페이지(HEAP)** 는 정렬이 되지 않는다.
+
+4. 테이블의 인덱스를 확인
+```sql
+analyze table emp, emp_c, emp_se;
+show INDEX FROM emp;
+show INDEX FROM emp_c;
+show INDEX FROM emp_se;
+show TABLE STATUS;
+```
+
+![DEXSRIPTION](https://s3.us-west-2.amazonaws.com/secure.notion-static.com/a472bfb1-6651-493a-846f-0fc92a4111c2/Untitled.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=AKIAT73L2G45EIPT3X45%2F20230105%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20230105T114522Z&X-Amz-Expires=86400&X-Amz-Signature=e39926a5236b8cc4761fddae55b9d4a7bfff1089f3f9b4f08cc7f6134ff8902f&X-Amz-SignedHeaders=host&response-content-disposition=filename%3D%22Untitled.png%22&x-id=GetObject)
+
+데이터 크기(**데이터 영역=힙**) 보조 인덱스를 생성해도 데이터 페이지를 건드리지 않으므로 **데이터 변화 X**
+
+단지 위쪽의 **인덱스 페이지만 추가**로 생성된 것이므로 5,783,552byte가 추가로 생성되었다.
+
+- 인덱스가 없는 Emp테이블 조회
+```sql
+SELECT * FROM Emp WHERE emp_no=100000;
+
+EXPALIN SELECT * FROM Emp WHERE emp_no=100000;
+```
+
+다음을 실행하면 **ALL로** 되어 있으므로, 전체 테이블 검색을 했다. 전체 테이블 검색의 의미는 전체 **데이터 페이지**를 처음부터 끝까지 찾아본다는 의미라고 얘기했었다. 즉, 1건을 찾기 위해 299,490행을 검색한 것이다. 인덱스가 없으므로 다 찾는 것이 당연하다.
+
+- 클러스터형 인덱스 Emp_C 테이블 조회
+```sql
+SELECT * FROM Emp_C WHERE emp_no=100000;
+
+EXPALIN SELECT * FROM Emp_C WHERE emp_no=100000;
+```
+위와 달리 단 1건의 행만 읽어서 데이터를 찾았다. type이 'const'인 경우에는 클러스터 인덱스인 PRIMARY를 사용한것으로 보면 된다.
+
+- 보조 인덱스 Emp_Se 테이블 조회
+```sql
+SELECT * FROM Emp_Se WHERE emp_no=100000;
+
+EXPALIN SELECT * FROM Emp_Se WHERE emp_no=100000;
+```
+
+type은 ref고 이 또한 행을 하나만 검색해서 찾았다. 
+
+**범위 검색**도 똑같다
+
+```sql
+SELECT * FROM Exp_C WHERE emp_no < 11000;
+```
+
+똑같이 클러스처형과 보조 인덱스 좋은 성능을 보여준다.
+
+> 인덱스 **힌트**를 사용하여 인덱스를 사용하지 못하도록 강제로 지정할 수 있다. 
+
+```sql
+SELECT * FROM Emp_C IGNORE INDEX(PRIMARY) WHERE emp_no < 11000;
+```
+
+그럼 당연히 FULL TABLE SCAN한다.
+
+- 보조 인덱스로 범위검색을 하면
+
+```sql
+SELECT * TABLE Emp_Se WHERE emp_no < 11000;
+```
+
+type은 'range'고
+
+결과는 
 
 
 
