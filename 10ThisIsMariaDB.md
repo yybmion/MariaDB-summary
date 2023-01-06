@@ -350,7 +350,7 @@ DROP TRIGGER IF EXISTS testTrg;
 DELIMITER //
 CREATE TRIGGER testTrg --트리거 이름
     AFTER DELETE --삭제 후에 작동하도록 지정
-    ON testTbl --트리거를 부탁할 테이블
+    ON testTbl --트리거를 부착할 테이블
     FOR EACH ROW --각 행마다 적용시킴
 BEGIN
     SET @msg = '가수 그룹이 삭제됨' ; --트리거 실행 시 작동되는 코드들
@@ -408,9 +408,9 @@ CREATE OR REPLACE TRIGGER trg_BackupUserTBL  -- 트리거 이름
 DECLARE 
    v_modType NCHAR(2); -- 변경 타입
 BEGIN
-   IF UPDATING THEN  -- 업데이트 되었다면
+   IF UPDATE THEN  -- 업데이트 되었다면
       v_modType := '수정';
-   ELSIF DELETING  THEN -- 삭제되었다면,
+   ELSEIF DELETE  THEN -- 삭제되었다면,
       v_modType := '삭제';
     END IF;
    -- :OLD 테이블의 내용(변경전의 내용)을 백업테이블에 삽입
@@ -457,6 +457,8 @@ SELECT * FROM BACKUP_USERTBL;
 
 
 **BEFORE TRIGGER**
+
+> 테이블에 **변경이 가해지기 전에 작동**, **BEFORE INSERT** 트리거 부착해 놓으면 **입력될 데이터 값을 미리 확인해서 문제가 있을 경우 다른 값으로 변경시킬 수 있다.**
 ```sql
 USE sqlDB;
 DROP TRIGGER IF EXISTS userTBL_BeforeInsertTrg;
@@ -484,12 +486,12 @@ ___
 **다중 트리거**
 **하나의 테이블에 동일한 트리거가 여러 개 부착되어 있는 것.** 예로 AFTER INSERT 트리거가 한 개 테이블에 2개 이상 부착되어 있을 수도 있다.
 
-![description](https://img1.daumcdn.net/thumb/R1280x0/?scode=mtistory2&fname=https%3A%2F%2Fblog.kakaocdn.net%2Fdn%2FbaWnBg%2FbtqZctCNnvw%2FtxsKKdkwrdbpt0j3NWPGqK%2Fimg.png)
-
 **중첩 트리거**
 **트리거가 또 다른 트리거를 작동하는 것.**
 
 물건을 구매하면, 물품테이블에서 남은 개수를 감소시키고, 배송 테이블 건수 입력
+
+![description](https://img1.daumcdn.net/thumb/R1280x0/?scode=mtistory2&fname=https%3A%2F%2Fblog.kakaocdn.net%2Fdn%2FbaWnBg%2FbtqZctCNnvw%2FtxsKKdkwrdbpt0j3NWPGqK%2Fimg.png)
 
 - 예제
 
