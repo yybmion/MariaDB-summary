@@ -206,3 +206,76 @@ CALL insert_article_tags(1,3);
 우리는 에러 메세지를 얻었다. 하지만 **CONTINUE 핸들러**로 handler를 선언했기 때문에 저장 **프로시저는 실행을 계속** 할 것이다. 결과로 에러 메시지 뿐만 아니라 기사들의 tag수도 얻을 수 있었다.
 
 따라서 CONTINUE 핸들러 대신 **EXIT핸들러**를 사용한다면 오직 에러메시지만 얻을 수 있다.
+
+:tangerine: 테이블 이름을 파라미터로 전달 (**동적쿼리**)
+
+!<스킵>!
+
+**스토어드 프로시저 특징**
+1. MariaDB의 **성능**을 향상시킬 수 있다.
+2. **유지관리**가 편하다.
+3. **모듈식** 프로그래밍이 가능하다.
+4. **보안**을 강화할 수 있다.
+
+```sql
+DELIMITER $$
+CREATE PROCEDURE delivProc(
+    IN id VARCHAR(10)
+)
+BEGIN
+    SELECT userID,name,addr,mobile1,mobile2
+        FROM userTBL
+        WHERE userID=id;
+END $$
+DELIMITER;
+```
+```sql
+CALL delivProc('LJB');
+```
+**위 쿼리는 보안을 위한 프로시저**
+
+___
+#### 스토어드 함수
+
+```sql
+DELIMITER $$
+CREATE FUNCTION 스토어드 함수이름(파라미터)
+    RETURNS 반환형식
+BEGIN
+        이 부분에 프로그래밍 코딩..
+        RETURN 반환값;
+END $$
+DELIMITER ;
+SELECT 스토어드_함수이름();
+```
+
+**스토어드 함수와 스토어드 프로시저의 차이점**
+1. 스토어드 프로시저의 파라미터와 달리 **IN,OUT**을 사용할 수 없다. 스토어드 함수의 파라미터는 모두 **입력 파라미터**로 사용된다.
+2. 스토어드 함수는 **RETURN문**으로 반환할 값의 데이터 형식을 지정하고, 본문 안에서는 **RETURN문**으로 하나의 값을 반환해야 한다. 스토어드 프로시저는 별도의 반환하는 구문이 없으며, 꼭 필요하다면 여러 갸의 **OUT파라미터**를 사용해서 값을 반환할 수 있다.
+3. 스토어드 프로시저는 **CALL**로 호출하지만, 스토어드 함수는 **SELECT** 문장 안에서 호출된다.
+4. 스토어드 프로시저 안에는 **SELECT문**을 사용할 수 있지만, 스토어드 함수 안에서는 집합 결과를 반환하는 **SELECT**를 사용할 수 없다.
+
+- 2개의 숫자의 합계를 계산하는 스토어드 함수
+```sql
+USE sqlDB;
+DROP FUNCTION IF EXISTS userFunc;
+DELIMITER $$
+CREATE FUNCTION userFunc(value1 INT,value2 INT)
+    RETURNS INT
+BEGIN
+    RETURN value1+value2;
+END $$
+DELIMITER ;
+
+SELECT userFunc(100,200);
+```
+___
+
+#### 커서
+
+> **커서**는 테이블에서 여러 개 행을 쿼리한 후에, 쿼리의 결과인 행 집합을 **한 행씩 처리**하기 위한 방식
+
+
+
+
+
