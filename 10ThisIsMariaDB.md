@@ -275,8 +275,236 @@ ___
 
 > **커서**는 테이블에서 여러 개 행을 쿼리한 후에, 쿼리의 결과인 행 집합을 **한 행씩 처리**하기 위한 방식
 
-
 ![111111111111](https://user-images.githubusercontent.com/113106136/210940753-b4bf3f6f-dd35-41df-ac86-8d3799811b4f.png)
+
+다음과 같은 텍스트 파일이 저장되어있고 이 파일을 처리하기 위해서는 이러한 과정을 거친다.
+
+1. 파일을 연다.(Open) 그러면 **파일포인터**는 파일의 제일 시작(BOF)을 가리키게 된다.
+2. 처음 데이터를 읽는다. 그러면 '이승기'의 데이커가 읽어지고, **파일포인터**는 '김범수'로 이동한다.
+3. 파일의 끝(EOF)까지 반복한다.
+- 읽은 데이터를 처리한다.
+- 현재의 **파일포인터**가 가리키는 데이터를 읽는다. **파일포인터**는 자동으로 다음으로 이동한다.
+4. 파일을 닫는다.(Close)
+
+**테이블의 행** 집합으로 생각해보아도 똑같다.
+
+**커서의 처리 순서**
+![description](https://img1.daumcdn.net/thumb/R1280x0/?scode=mtistory2&fname=https%3A%2F%2Fblog.kakaocdn.net%2Fdn%2Fbn7TUB%2Fbtq0bv8QKMj%2Fv0kweZgGkh50altj0hgeW1%2Fimg.png)
+
+쉽게,
+1. 커서 선언 (**DECALRE**)
+2. 반복 조건 선언 (**DECLARE,HANDLER**)
+3. 커서 열기 (**OPEN**)
+4. 커서에서 데이터 가져오기 (**FETCH**)
+5. 데이터 처리
+6. 커서 닫기 (**CLOSE**)
+
+
+![description](https://img1.daumcdn.net/thumb/R1280x0/?scode=mtistory2&fname=https%3A%2F%2Fblog.kakaocdn.net%2Fdn%2FIjePd%2Fbtq0jNfmXrZ%2FYLVE64j1VykcYc8TtPY3GK%2Fimg.png)
+
+41,42. 커서 선언시 파일을 읽어(select) 파일의 **제일 시작**을 가르키게됨.
+
+>실제라면 이 스토어드 프로시저를 사용하는 것보다 **AVG() 함수**를 사용하는 것이 훨씬 효율적이지만, '**홀수의 평균값**'이나 '**5의 배수에 해당하는 값의 평균**' 같은 특별한 평균은 AVG() 함수에서 사용할 수 없어 **커서**를 사용해야한다.
+
+___
+
+고객 테이블에 고객 등급열을 추가해 구매 테이블에서 고객이 구매한 총액에 따라 등급이 결정되는 스토어드 프로시저를 작성
+
+![DESCRIPTION](https://blog.kakaocdn.net/dn/rjqYV/btq0ehorPFr/1H2hIeAvQDfW6I66xvb1K1/img.png)
+
+10~15. 커서 선언 : 파일을 읽어(select) **시작부분**을 가르킨다.
+
+17,18. **행의 끝**일 때 endOfRow 변수에 true 대입.
+
+19 커서를 연다.
+
+21 커서에서 읽은 1줄은 **id, hap** 변수에 대입
+
+___
+
+#### 트리거
+
+트리거란?
+> 트리거는 사전적 의미로 방아쇠를 뜻한다. 방아쇠를 당기면 총알이 나가듯 테이블에 무슨일이 발생하면 자동으로 실행된다.
+
+> 테이블에서 **INSERT나** **UPDATE** 또는 **DELETE** 작업이 발생되면 실행되는 코드
+
+> 누군가 고의 혹은 실수로 테이블을 삭제한다면 누가 지웠는지 추적하는 일이 쉽지 않다. 이럴 때 트리거를 걸어놓는다면 이러한 문제를 해결할 수 있다.
+
+> 트리거는 스토어드 프로시저와 작동이 비슷하지만 직접 실행은 불가하고 오직 **해당 테이블에 이벤트가 발생할 경우**에만 실행
+
+> **IN,OUT 매개 변수 사용 불가**
+
+
+트리거 예제
+```sql
+USE sqlDB;
+CREATE TABLE IF NOT EXISTS testTBL (id INT, txt VARCHAR(10));
+INSERT INTO testTBL VALUES(1,'이엑스아이디');
+INSERT INTO testTBL VALUES(2,'애프터스쿨');
+INSERT INTO testTBL VALUES(3,'에이오에이');
+```
+
+```sql
+DROP TRIGGER IF EXISTS testTrg;
+DELIMITER //
+CREATE TRIGGER testTrg --트리거 이름
+    AFTER DELETE --삭제 후에 작동하도록 지정
+    ON testTbl --트리거를 부탁할 테이블
+    FOR EACH ROW --각 행마다 적용시킴
+BEGIN
+    SET @msg = '가수 그룹이 삭제됨' ; --트리거 실행 시 작동되는 코드들
+END //
+DELIMITER;
+```
+
+이제 삭제를 해보자
+```sql
+SET @msg = '';
+INSERT INTO testTbl VALUES(4,'나인뮤지스');
+SELECT @msg;
+UPDATE testTbl SET txt = '에이핑크' WHERE id =3;
+SELECT @msg;
+DELETE FROM testTbl WHERE id=4;
+SELECT @msg;
+```
+
+다른 **INSERT UPDATE** 문은 @msg 변수에 아무것도 나오지 않지만 **DELETE** 실행시 '가수 그룹이 삭제됨'이 출력되는 것을 확인할 수 있다.
+
+**트리거의 종류**
+
+:house: **AFTER 트리거**
+테이블에 **INSERT,UPDATE,DELETE**등의 작업이 일어났을 때 작동하는 트리거 즉, **작업 후에 작동**
+
+:bank: **BEFORE 트리거**
+이벤트가 **발생하기 전에 작동**하는 트리거, 이 또한 **INSERT,UPDATE,DELETE** 세가지 이벤트로 작동한다.
+
+- AFTER 트리거 실습
+
+```sql
+CREATE TABLE backup_userTBL
+( userID  	CHAR(8) NOT NULL PRIMARY KEY, 
+  userName  NVARCHAR2(10) NOT NULL,
+  birthYear NUMBER(4) NOT NULL,  
+  addr	  	NCHAR(2) NOT NULL, 
+  mobile1  CHAR(3), 
+  mobile2  CHAR(8), 
+  height   NUMBER(3), 
+  mDate    DATE,
+  modType  NCHAR(2), -- 변경된 타입. '수정' 또는 '삭제'
+  modDate  DATE, -- 변경된 날짜
+  modUser  NVARCHAR2(256) -- 변경한 사용자
+);
+
+SELECT * FROM backup_userTBL;
+```
+![description](https://mblogthumb-phinf.pstatic.net/MjAyMDA0MDRfMjQ1/MDAxNTg2MDA2OTMzMjEz.t0JzklWso0g5iy8-FFpQacQ-WGEO4o3HFnRJN8iyxnQg.1Xup6FHU2ZC2qewQl87NNXRsyB_X09m_hH78G1SdVG0g.PNG.chas0302/image.png?type=w800)
+
+```sql
+CREATE OR REPLACE TRIGGER trg_BackupUserTBL  -- 트리거 이름
+   AFTER  UPDATE OR DELETE  -- 삭제,수정 후에 작동하도록 지정
+   ON userTBL -- 트리거를 부착할 테이블
+   FOR EACH ROW -- 각 행마다 적용됨
+DECLARE 
+   v_modType NCHAR(2); -- 변경 타입
+BEGIN
+   IF UPDATING THEN  -- 업데이트 되었다면
+      v_modType := '수정';
+   ELSIF DELETING  THEN -- 삭제되었다면,
+      v_modType := '삭제';
+    END IF;
+   -- :OLD 테이블의 내용(변경전의 내용)을 백업테이블에 삽입
+    INSERT INTO backup_userTBL VALUES( :OLD.userID, :OLD.userName, :OLD.birthYear, 
+        :OLD.addr, :OLD.mobile1, :OLD.mobile2, :OLD.height, :OLD.mDate, 
+        v_modType, SYSDATE(), USER() );
+END trg_BackupUserTBL;
+```
+
+여기서 한 가지 **OLD테이블은 update,delete**가 **수행되기 전**에 **데이터가 잠깐 저장되어 있는 임시 테이블**이라고 생각하면 된다.
+
+>참고로 이러한 데이터 변경 이력 기록을 위해서는 우리는 먼저 "**NEW**", "**OLD**"라는 키워드를 알아 두어야 한다. "NEW"는 "**NEW.[컬럼 이름]**"과 같은 형태로 사용 되어 **새롭게 입력 되거나 변경된 레코드의 컬럼 값**을 의미한다. "OLD"는 "**OLD.[컬럼 이름]**"으로 쓰일 수 있고 **삭제 혹은 수정되기 이전의 컬럼 값**을 나타낸다.
+
+```sql
+UPDATE USERTBL SET ADDR = '몽고' WHERE USERID ='JKW';
+DELETE USERTBL WHERE HEIGHT >= 177;
+
+SELECT * FROM BACKUP_USERTBL;
+```
+
+![DESCRIPTION](https://mblogthumb-phinf.pstatic.net/MjAyMDA0MDRfOCAg/MDAxNTg2MDA3MjI3MDgx.1ohtzCqcs6IqqDPTHKG6VctIKNLC-x-pb345xDqSLo8g.pf4VekAfIXz8HJalaAuo9Oej4d2D71O7XNBk9YbYz34g.PNG.chas0302/image.png?type=w800)
+
+
+**트리거가 생성하는 임시 테이블**
+![description](https://mblogthumb-phinf.pstatic.net/MjAyMDA0MDRfMTk1/MDAxNTg2MDA2MTU3OTM2.D3KNFnXe6Qbnk9Fc0jH50uRobIT9-Tml3ADhdc0VlU8g.wT3ZCrJoolBhj4RRsMjn_HQtKQwYFIDSmUkNwcr_qLQg.PNG.chas0302/image.png?type=w800)
+
+1) **NEW 테이블**
+
+**INSERT와 UPDATE 작업 시**에 변경할 새로운 데이터를 잠깐 저장해 놓는다.
+
+즉, 테이블에 INSERT 트리거나, UPDATE 트리거를 부착시켜 놓았다면, 해당 테이블에 **INSERT나 UPDATE 명령이 수행되면 입력/변경될 새 값이 :NEW 테이블에 정한 후에, :NEW 테이블의 값을 테이블에 입력/변경되는 것이다.** 그러므로 
+
+:NEW 테이블을 조작하면 입력되는 새로운 값을 다른 값으로 대치시킬 수 있다.
+
+​
+
+2) **OLD 테이블**
+
+**DELETE 작업 시 데이터를 잠깐 저장해 놓는다.**
+
+쉽게 말해 DELETE와 UPDATE 실행시 OLD테이블에 값이 저장되면 그 값을 이용해 백업테이블에 값을 저장시킬 수 있다.
+
+> new old 테이블의 상세 설명 영상 (https://www.youtube.com/watch?v=9Hm7qaN3xhQ)
+
+
+**BEFORE TRIGGER**
+```sql
+USE sqlDB;
+DROP TRIGGER IF EXISTS userTBL_BeforeInsertTrg;
+DELIMITER //
+CREATE TRIGGER userTBL_BeforeInsertTrg --트리거 이름
+    BEFORE INSERT --입력 전에 작동하도록 설정
+    ON userTBL --트리거를 부착할 테이블
+    FOR EACH ROW
+BEGIN
+    IF NEW.birthYear < 1900 THEN
+        SET NEW.birthYear =0;
+    ELSEIF NEW.birthYear > YEAR(CURDATE()) THEN
+        SET NEW.birthYear = YEAR(CURDATE());
+    END IF;
+END //
+DELIMITER;
+```
+
+
+**9~13행**은 입력되는 값이 들어있는 **NEW테이블**의 값을 검사해서 1900미만인 경우 0으로, 현재 연도보다 초과하면 현재 연도로 변경하도록 설정해 놓았다.
+
+___
+> 출처(https://title-developer.tistory.com/146)
+> 
+**다중 트리거**
+**하나의 테이블에 동일한 트리거가 여러 개 부착되어 있는 것.** 예로 AFTER INSERT 트리거가 한 개 테이블에 2개 이상 부착되어 있을 수도 있다.
+
+![description](https://img1.daumcdn.net/thumb/R1280x0/?scode=mtistory2&fname=https%3A%2F%2Fblog.kakaocdn.net%2Fdn%2FbaWnBg%2FbtqZctCNnvw%2FtxsKKdkwrdbpt0j3NWPGqK%2Fimg.png)
+
+**중첩 트리거**
+**트리거가 또 다른 트리거를 작동하는 것.**
+
+물건을 구매하면, 물품테이블에서 남은 개수를 감소시키고, 배송 테이블 건수 입력
+
+- 예제
+
+![description](https://img1.daumcdn.net/thumb/R1280x0/?scode=mtistory2&fname=https%3A%2F%2Fblog.kakaocdn.net%2Fdn%2FcSPT2y%2FbtqY8GCFq1h%2FYj59rDyp5jgxiu0pLNUonk%2Fimg.png)
+
+![description](https://img1.daumcdn.net/thumb/R1280x0/?scode=mtistory2&fname=https%3A%2F%2Fblog.kakaocdn.net%2Fdn%2Fqath2%2FbtqZfhVViZI%2F7xLpkTJe5RCN4g2SUty8J0%2Fimg.png)
+
+**3~12.** 구매테이블에 구매가 발생하면 물품테이블에 주문한 개수를 빼고
+
+**16~28.** 물품테이블에 수정이 발생하면 배송테이블에 배송할 물건과 개수를 입력
+
+![description](https://img1.daumcdn.net/thumb/R1280x0/?scode=mtistory2&fname=https%3A%2F%2Fblog.kakaocdn.net%2Fdn%2FcHZEcX%2FbtqYZ7uABVb%2FDFwTuAZoFznpuvUgVKKZTk%2Fimg.png)
+
+
+ 
 
 
 
