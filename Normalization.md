@@ -29,3 +29,15 @@ ___
 
 그니까 P.417 보면 b그림에서 SSN하고 ENAME만 놓고 보면 겹치는게 없어서 딱 좋은데 PNUMBER까지 들어가면 SSN하나에 PNUMBER2개가 있어 SSN이 중복되는 테이블이 만들어진다.
 근데 SSN만으로 모든 행이 구분되지 않습니다. 그래서 SSN말고 PNUMBER도 기본키로 설정.
+
+결정자란?
+> https://ybdeveloper.tistory.com/86
+
+
+1-5정규화 보고 ,
+BCNF
+> https://3months.tistory.com/193
+그림을 보면 3정규화를 마치면 학생과 과목을 합쳐 후보키가 된것을 알 수 있다. 근데 여기서 결정자는 교수이다. 교수가 정해져야 과목이 정해지기 때문이다. 근데 교수는 후보키가 아니므로 BCNF가 만족하지 못한다.
+![image](https://github.com/yybmion/MariaDB-summary/assets/113106136/fa764dac-6614-40b4-b341-7809b6d0907b)
+
+
